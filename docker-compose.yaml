@@ -1,0 +1,36 @@
+# sudo docker compose --env-file .env up --build -d
+
+services:
+  mongo-db:
+    image: mongo
+    command: mongod --port ${MONGO_PORT}
+    restart: unless-stopped
+    volumes:
+      - ./mongo:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ADMIN_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ADMIN_PASS}
+    networks:
+      db-network:
+        ipv4_address: ${MONGO_HOST}
+
+  mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    depends_on:
+      - mongo-db
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ADMIN_USER}:${MONGO_ADMIN_PASS}@mongo-db:${MONGO_PORT}/
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASS}
+      PORT: 80
+    networks:
+      db-network:
+        ipv4_address: "192.168.101.151"
+
+networks:
+  db-network:
+    ipam:
+      driver: default
+      config:
+        - subnet: "192.168.101.0/24"
