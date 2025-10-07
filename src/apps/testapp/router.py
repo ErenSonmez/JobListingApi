@@ -1,6 +1,7 @@
 import asyncio
 
-from repositories.base import BaseRepository
+from repositories.factory import RepositoryFactory
+from repositories.user import UserRepository
 
 from fastapi import APIRouter
 
@@ -11,7 +12,13 @@ async def ping():
     await asyncio.sleep(10)
     return "pong"
 
-@router.get("/test-repo")
-async def test_repo():
-    repo = BaseRepository()
-    return repo._client.list_database_names()
+@router.get("/test-user_create")
+async def test_user_create(repo_name: str):
+    repo = RepositoryFactory.get_repository(UserRepository)
+    return await repo.create("test","123")
+
+@router.get("/test-user_get_all")
+async def test_user_get_all(repo_name: str):
+    repo = RepositoryFactory.get_repository(UserRepository)
+    result = await repo.get_all()
+    return result
