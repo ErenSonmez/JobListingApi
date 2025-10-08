@@ -8,8 +8,8 @@ class UserRepository(BaseRepository):
     def __init__(self, client: AsyncIOMotorClient):
         super().__init__(client)
 
-    def create(self, username: str, password: str):
-        user = User(username=username, password=password)
+    def create(self, username: str, password: str, email: str):
+        user = User(username=username, password=password, email=email)
         return user.create()
 
     def get_all(self):

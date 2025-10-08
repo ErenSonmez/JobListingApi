@@ -14,8 +14,6 @@ from repositories.base import BaseRepository
 from repositories.schemas import MongoClientCredentials
 from repositories.exceptions import RepositoryNotFoundException
 
-from repositories.utils import validate_and_create_mongo_credentials
-
 _REPO_TYPE = TypeVar("_REPO_TYPE", bound=BaseRepository)
 
 class RepositoryFactory:
@@ -31,10 +29,12 @@ class RepositoryFactory:
 
     _DB_CLIENT: AsyncIOMotorClient = None
 
+    _MODEL_CLASSES: list[Document] = None
+
     _INSTANCES: dict[str,object] = {}
 
     @classmethod
-    def _get_credentials_from_env(cls):
+    async def _get_credentials_from_env(cls):
         host = os.getenv(cls.ENV_DB_HOST_KEY)
         port = os.getenv(cls.ENV_DB_PORT_KEY)
 
@@ -43,24 +43,25 @@ class RepositoryFactory:
 
         db_name = os.getenv(cls.ENV_DB_NAME_KEY)
 
-        creds = validate_and_create_mongo_credentials(host, port, username, password, db_name)
+        creds = MongoClientCredentials(
+            host = host,
+            port = port,
+            username = username,
+            password = password,
+            db_name = db_name
+        )
 
         return creds
 
     @classmethod
-    def _create_client(cls):
+    async def _get_credentials(cls):
         if cls._CREDENTIALS is None:
-            cls._CREDENTIALS = cls._get_credentials_from_env()
+            cls._CREDENTIALS = await cls._get_credentials_from_env()
 
-        creds = cls._CREDENTIALS
-
-        cls._DB_CLIENT = AsyncIOMotorClient(f'mongodb://{creds.username}:{creds.password}@{creds.host}:{creds.port}/')
-
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(cls._init_odm())
+        return cls._CREDENTIALS
 
     @classmethod
-    async def _init_odm(cls):
+    async def _set_model_classes(cls):
         import models
 
         model_classes = []
@@ -71,39 +72,66 @@ class RepositoryFactory:
                 if issubclass(obj, Document) and obj is not Document:
                     model_classes.append(obj)
 
+        cls._MODEL_CLASSES = model_classes
+
+    @classmethod
+    async def _get_model_classes(cls):
+        if cls._MODEL_CLASSES is None:
+            await cls._set_model_classes()
+
+        return cls._MODEL_CLASSES
+
+    @classmethod
+    async def _init_odm(cls, reset_model_classes: bool = False):
+        if reset_model_classes:
+            await cls._set_model_classes()
+
+        model_classes = await cls._get_model_classes()
+
         await init_beanie(
             database=cls._DB_CLIENT.get_database(cls._CREDENTIALS.db_name),
-            document_models=model_classes,
+            document_models = model_classes,
         )
 
     @classmethod
-    def _get_client(cls):
+    async def _create_client(cls):
+        creds = await cls._get_credentials()
+
+        cls._DB_CLIENT = AsyncIOMotorClient(f'mongodb://{creds.username}:{creds.password}@{creds.host}:{creds.port}/')
+
+        await cls._init_odm(reset_model_classes=True)
+
+    @classmethod
+    async def _get_client(cls):
         if cls._DB_CLIENT is None:
-            cls._create_client()
+            await cls._create_client()
 
         return cls._DB_CLIENT
 
     @classmethod
-    def set_db_credentials(cls, creds: MongoClientCredentials, create_client: bool = True):
-        cls._CREDENTIALS = validate_and_create_mongo_credentials(creds.host, creds.port, creds.username, creds.password, creds.db_name)
-
-        cls._DB_CLIENT = None
-        if create_client:
-            cls._create_client()
-
-
-
-    @classmethod
-    def get_repository(cls, repo_type: Type[_REPO_TYPE]) -> _REPO_TYPE:
-        repo_name = repo_type.__name__
-
-        if repo_name in cls._INSTANCES:
-            return cls._INSTANCES[repo_name]
-
+    async def _create_repository(cls, repo_type: Type[_REPO_TYPE]) -> _REPO_TYPE:
         if not issubclass(repo_type, BaseRepository):
             raise RepositoryNotFoundException(repo_type)
 
-        client = cls._get_client()
+        client = await cls._get_client()
+        return repo_type(client)
 
-        cls._INSTANCES[repo_name] = repo_type(client)
-        return cls._INSTANCES[repo_name]
+    @classmethod
+    async def set_db_credentials(cls, creds: MongoClientCredentials, create_client: bool = True):
+        cls._CREDENTIALS = creds
+
+        cls._DB_CLIENT = None
+        if create_client:
+            await cls._create_client()
+
+    @classmethod
+    async def get_repository(cls, repo_type: Type[_REPO_TYPE], reset_repo: bool = False) -> _REPO_TYPE:
+        repo_name = repo_type.__name__
+
+        if not reset_repo and repo_name in cls._INSTANCES:
+            return cls._INSTANCES[repo_name]
+
+        repo = await cls._create_repository(repo_type)
+        cls._INSTANCES[repo_name] = repo
+
+        return repo

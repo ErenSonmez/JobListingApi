@@ -1,10 +1,10 @@
-from dataclasses import dataclass
+from pydantic import BaseModel, BeforeValidator, IPvAnyAddress
+from typing import Annotated
 
-@dataclass(frozen=True)
-class MongoClientCredentials:
-    # TODO: Improve validation
-    host: str
-    port: int
+IntConvertible = Annotated[int, BeforeValidator(lambda v: int(v) if isinstance(v, str) and v.isdigit() else v)]
+class MongoClientCredentials(BaseModel):
+    host: IPvAnyAddress
+    port: IntConvertible
 
     username: str
     password: str
