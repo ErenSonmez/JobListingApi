@@ -1,5 +1,4 @@
 import os
-import asyncio
 
 from beanie import init_beanie, Document
 import pkgutil

@@ -4,13 +4,6 @@ from repositories.base import BaseRepository
 
 from models.user import User
 
-class UserRepository(BaseRepository):
+class UserRepository(BaseRepository[User]):
     def __init__(self, client: AsyncIOMotorClient):
-        super().__init__(client)
-
-    def create(self, username: str, password: str, email: str):
-        user = User(username=username, password=password, email=email)
-        return user.create()
-
-    def get_all(self):
-        return User.all().to_list()
+        super().__init__(client, User)
