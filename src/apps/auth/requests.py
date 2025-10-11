@@ -1,13 +1,4 @@
-from beanie import PydanticObjectId
-from pydantic import BaseModel, EmailStr
+from models.user import UserData
 
-class CreateUserRequest(BaseModel):
-    username: str
-    password: str
-    email: EmailStr
-
-class UpdateUserRequest(BaseModel):
-    # id: PydanticObjectId
-    username: str
-    password: str
-    email: EmailStr
+class CreateUserRequest(UserData): ...
+class UpdateUserRequest(UserData): ...

@@ -29,7 +29,7 @@ def test_get_repository_classes():
     assert len(repo_classes)>0
     assert all([issubclass(rc, BaseRepository) for rc in repo_classes])
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 @pytest.mark.parametrize(
     'repo_class',
     repo_classes,
@@ -40,7 +40,7 @@ async def test_repository_client(repo_class):
     repo: BaseRepository = await RepositoryFactory.get_repository(repo_class)
     assert db_client is repo._client
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 @pytest.mark.parametrize(
     'repo_class',
     repo_classes,
@@ -50,7 +50,7 @@ async def test_repository_type(repo_class):
     repo: BaseRepository = await RepositoryFactory.get_repository(repo_class)
     assert isinstance(repo, repo_class)
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 @pytest.mark.parametrize(
     'repo_class',
     repo_classes,
@@ -61,13 +61,13 @@ async def test_repository_cache(repo_class):
     second_repo: BaseRepository = await RepositoryFactory.get_repository(repo_class)
     assert first_repo is second_repo
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_repository_model_cache():
     first_models = await RepositoryFactory._get_model_classes()
     second_models = await RepositoryFactory._get_model_classes()
     assert first_models is second_models
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_repository_reset():
     first_creds = await RepositoryFactory._get_credentials()
     first_client = await RepositoryFactory._get_client()
@@ -88,3 +88,24 @@ async def test_repository_reset():
     assert second_creds is new_creds
     assert first_creds is not second_creds
     assert first_client is not second_client
+
+    new_creds = MongoClientCredentials(
+        host = first_creds.host,
+        port = first_creds.port,
+        username = first_creds.username,
+        password = first_creds.password,
+        db_name = first_creds.db_name,
+    )
+
+    await RepositoryFactory.set_db_credentials(new_creds, False)
+
+    third_creds = await RepositoryFactory._get_credentials()
+
+    assert third_creds is new_creds
+    assert second_creds is not third_creds
+    assert RepositoryFactory._DB_CLIENT is None
+
+    third_client = await RepositoryFactory._get_client()
+
+    assert RepositoryFactory._DB_CLIENT is third_client
+    assert third_client is not second_client

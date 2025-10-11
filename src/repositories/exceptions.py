@@ -17,3 +17,8 @@ class RepositoryNotFoundException(BaseRepositoryException):
     def __init__(self, repo_type: type):
         message = f"Repository type not found: {repo_type.__name__}"
         super().__init__(message)
+
+class MissingIdException(BaseRepositoryException):
+    def __init__(self, message):
+        message = f"ID is missing: {message}"
+        super.__init__(message)
