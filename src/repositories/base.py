@@ -1,4 +1,7 @@
 from beanie import Document, PydanticObjectId
+from beanie.odm.queries.find import FindOne, FindMany
+from beanie.odm.queries.delete import DeleteOne
+
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from functools import wraps
@@ -61,14 +64,14 @@ class BaseRepository(Generic[TModel, TModelData]):
         return wrapper
 
     # Read
-    def find(self, query: Mapping[Any, Any] | bool):
-        return self._model.find(query).to_list()
+    def find(self, query: Mapping[Any, Any] | bool) -> FindMany[TModel]:
+        return self._model.find(query)
 
-    def get_by_id(self, _id: PydanticObjectId):
+    def get_by_id(self, _id: PydanticObjectId) -> FindOne[TModel]:
         return self._model.find_one({"_id": _id})
 
-    def get_all(self) -> Awaitable[List[TModel]]:
-        return self._model.all().to_list()
+    def get_all(self) -> FindMany[TModel]:
+        return self._model.all()
 
     # Create
     @overload
@@ -113,12 +116,12 @@ class BaseRepository(Generic[TModel, TModelData]):
 
     # Delete
     @overload
-    def delete(self, item: TModel) -> Awaitable: ...
+    def delete(self, item: TModel) -> DeleteOne: ...
 
     @overload
-    def delete(self, _id: PydanticObjectId) -> Awaitable: ...
+    def delete(self, _id: PydanticObjectId) -> DeleteOne: ...
 
-    def delete(self, item_data: PydanticObjectId | TModel) -> Awaitable:
+    def delete(self, item_data: PydanticObjectId | TModel) -> DeleteOne:
         if isinstance(item_data, PydanticObjectId):
             _id = item_data
 

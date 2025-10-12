@@ -18,8 +18,7 @@ async def get_user_by_id(_id: PydanticObjectId):
 @router.get("/user/all")
 async def get_all_users():
     repo = await RepositoryFactory.get_repository(UserRepository)
-    result = await repo.get_all()
-    return result
+    return repo.get_all()
 
 @router.post("/user")
 async def create_user(request: CreateUserRequest):
