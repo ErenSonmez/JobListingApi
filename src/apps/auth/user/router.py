@@ -22,6 +22,7 @@ async def get_all_users():
 
 @router.post("/")
 async def create_user(request: CreateUserRequest):
+    # TODO: dont return password hash and id, create response class and map user to it.
     return await AuthService.create_user(request)
 
 @router.put("/{_id}")
