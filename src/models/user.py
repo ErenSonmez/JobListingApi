@@ -1,11 +1,14 @@
 from beanie import Document
-from pydantic import EmailStr, BaseModel
+from pydantic import EmailStr
 
 from models.base import BaseModelFieldData
 
-class UserData(BaseModelFieldData):
+class UserDataPublic(BaseModelFieldData):
+    # does not include sensitive data
     username: str
-    password: str
     email: EmailStr
 
-class User(UserData, Document): ...
+class UserDataFull(UserDataPublic):
+    password: str
+
+class User(UserDataFull, Document): ...

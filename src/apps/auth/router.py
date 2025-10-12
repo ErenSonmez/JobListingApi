@@ -1,29 +1,28 @@
-from apps.auth.requests import *
+from typing import Annotated
 
-from repositories.factory import RepositoryFactory
-from repositories.user import UserRepository
+from apps.auth.requests import LoginRequest
 
 from services.auth import AuthService
 
-from beanie import PydanticObjectId
-
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Response, status
+from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter()
 
-@router.get("/user/{_id}")
-async def get_user_by_id(_id: PydanticObjectId):
-    return await AuthService.get_user_by_id(_id)
+@router.post("/login")
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], response: Response):
+    request = LoginRequest(
+        usernameOrEmail = form_data.username,
+        password = form_data.password
+    )
+    token = await AuthService.login(request)
+    if token is None:
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+        return {"detail": "User not found"}
 
-@router.get("/user/all")
-async def get_all_users():
-    repo = await RepositoryFactory.get_repository(UserRepository)
-    return repo.get_all()
+    return {"token": token}
 
-@router.post("/user")
-async def create_user(request: CreateUserRequest):
-    return await AuthService.create_user(request)
 
-@router.put("/user/{_id}")
-async def update_user(_id: PydanticObjectId, request: UpdateUserRequest):
-    return await AuthService.update_user(_id, request)
+
+from apps.auth.user.router import router as user_router
+router.include_router(user_router, prefix="/user")

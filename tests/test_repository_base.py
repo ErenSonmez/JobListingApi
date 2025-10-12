@@ -15,7 +15,7 @@ from repositories.base import BaseRepository
 from repositories.schemas import MongoClientCredentials
 from repositories.user import UserRepository
 
-from models.user import User, UserData
+from models.user import User, UserDataFull
 
 def get_repository_classes() -> list[BaseRepository]:
     import repositories
@@ -121,7 +121,7 @@ async def test_repository_reset():
 async def test_repository_crud():
     assert 1==1
 
-    test_user_data = UserData(
+    test_user_data = UserDataFull(
         username="test-data-username",
         password="test-data-password",
         email="test-data@email.com",
@@ -169,7 +169,7 @@ async def test_repository_crud():
     update_user_id = new_user_model.id
 
     old_data = new_user_model.model_dump()
-    update_user_data = UserData(
+    update_user_data = UserDataFull(
         username="update-test-data-username",
         password="update-test-data-password",
         email="update-test-data@email.com",

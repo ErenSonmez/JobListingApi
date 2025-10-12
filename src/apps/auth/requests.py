@@ -1,4 +1,5 @@
-from models.user import UserData
+from pydantic import BaseModel
 
-class CreateUserRequest(UserData): ...
-class UpdateUserRequest(UserData): ...
+class LoginRequest(BaseModel):
+    usernameOrEmail: str
+    password: str
