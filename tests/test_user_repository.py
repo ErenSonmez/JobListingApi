@@ -107,3 +107,13 @@ async def test_repository_crud():
     old_data = update_user_model.model_dump()
     await repo.update(update_user_model_with_id)
     await update_assert_statements(update_user_id, old_data)
+
+    fetch_update_users = await repo.find(User.username == update_user_model_with_id.username)
+    fetch_update_user = None
+    for u in fetch_update_users:
+        if u.id == update_user_model_with_id.id:
+            fetch_update_user = u
+            break
+    assert fetch_update_user is not None
+    assert fetch_update_user.id == update_user_model_with_id.id
+    assert fetch_update_user.username == update_user_model_with_id.username

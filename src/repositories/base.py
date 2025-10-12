@@ -3,7 +3,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from functools import wraps
 
-from typing import Any, Awaitable, List, get_origin, overload, TypeVar, Generic, Callable, get_args
+from typing import Any, Awaitable, List, Mapping, get_origin, overload, TypeVar, Generic, Callable, get_args
 from pydantic import BaseModel, ValidationError
 
 from repositories.exceptions import MissingIdException
@@ -61,8 +61,8 @@ class BaseRepository(Generic[TModel, TModelData]):
         return wrapper
 
     # Read
-    def find(self, query):
-        return self._model.find(query) # TODO: Not tested
+    def find(self, query: Mapping[Any, Any] | bool):
+        return self._model.find(query).to_list()
 
     def get_by_id(self, _id: PydanticObjectId):
         return self._model.find_one({"_id": _id})
