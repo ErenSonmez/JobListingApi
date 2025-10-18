@@ -22,7 +22,7 @@ def get_repository_classes() -> list[BaseRepository]:
 
     repository_classes = []
     for module_info in pkgutil.iter_modules(repositories.__path__):
-        module = importlib.import_module(f"src.repositories.{module_info.name}")
+        module = importlib.import_module(f"repositories.{module_info.name}")
 
         for _, obj in inspect.getmembers(module, inspect.isclass):
             if issubclass(obj, BaseRepository) and obj is not BaseRepository:
@@ -222,6 +222,7 @@ async def test_repository_crud():
         if u.id == update_user_model_with_id.id:
             fetch_update_user = u
             break
+
     assert fetch_update_user is not None
     assert fetch_update_user.id == update_user_model_with_id.id
     assert fetch_update_user.username == update_user_model_with_id.username

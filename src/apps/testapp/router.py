@@ -25,4 +25,3 @@ async def reset_db_credentials(creds: MongoClientCredentials):
 @router.get("/auth-test")
 async def auth_test(user: Annotated[User, Depends(AuthService.get_user_from_token)]):
     return {"user": user}
-
