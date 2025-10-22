@@ -116,7 +116,6 @@ class AuthService:
 
     @classmethod
     async def create_user(cls, data: UserDataFull):
-        data.password = cls._hash_password(data.password)
         repo = await RepositoryFactory.get_repository(UserRepository)
 
         user_by_username = await repo.fetch_by_username(data.username)
@@ -127,7 +126,10 @@ class AuthService:
         if user_by_email is not None:
             raise EmailExistsException(data.email)
 
-        return await repo.create(data)
+        create_data = data.model_copy()
+        create_data.password = cls._hash_password(create_data.password)
+
+        return await repo.create(create_data)
 
     @classmethod
     async def update_user(cls, _id: PydanticObjectId, data: UserDataFull):

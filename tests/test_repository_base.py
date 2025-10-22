@@ -17,6 +17,8 @@ from repositories.user import UserRepository
 
 from models.user import User, UserDataFull
 
+from tests.utils import setup_teardown_users
+
 def get_repository_classes() -> list[BaseRepository]:
     import repositories
 
@@ -118,8 +120,8 @@ async def test_repository_reset():
     assert third_client is not second_client
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_repository_crud():
-    assert 1==1
+async def test_repository_crud(setup_teardown_users):
+    users_to_delete, user_ids_to_delete = setup_teardown_users
 
     test_user_data = UserDataFull(
         username="test-data-username",
@@ -142,8 +144,14 @@ async def test_repository_crud():
     repo = await RepositoryFactory.get_repository(UserRepository)
 
     new_user_data = await repo.create(test_user_data)
+    users_to_delete.append(new_user_data)
+
     new_user_dict = await repo.create(test_user_dict)
+    users_to_delete.append(new_user_dict)
+
     new_user_model = await repo.create(test_user_model)
+    users_to_delete.append(new_user_model)
+
 
     assert new_user_data.id is not None
     assert new_user_dict.id is not None
@@ -241,6 +249,3 @@ async def test_repository_crud():
     assert fetch_update_user is not None
     assert fetch_update_user.id == update_user_model_with_id.id
     assert fetch_update_user.username == update_user_model_with_id.username
-
-    # cleanup
-    await repo.delete(update_user_model_with_id)
