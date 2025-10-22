@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException
 
 from services.exceptions import UserNotFoundExcepotion
 
-router = APIRouter()
+router = APIRouter(tags=["Auth"])
 
 @router.post("/login")
 async def login(request: LoginRequest):

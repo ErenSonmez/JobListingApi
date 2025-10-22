@@ -20,7 +20,7 @@ services:
     depends_on:
       - mongo-db
     environment:
-      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ADMIN_USER}:${MONGO_ADMIN_PASS}@mongo-db:${MONGO_PORT}/
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ADMIN_USER}:${MONGO_ADMIN_PASS}@${MONGO_HOST}:${MONGO_PORT}/
       ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER}
       ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASS}
       PORT: 80

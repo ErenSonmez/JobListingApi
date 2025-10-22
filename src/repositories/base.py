@@ -132,3 +132,17 @@ class BaseRepository(Generic[TModel, TModelData]):
             raise MissingIdException("ID is required either in data object or as parameter for delete.")
 
         return self.get_by_id(_id).delete()
+
+    def get_page(self, page: int, size: int) -> FindMany[TModel]:
+        # TODO: Add filtering
+        if page < 1:
+            page = 1
+
+        if size > 100:
+            size = 100
+
+        return (self._model
+                        .all()
+                        .skip((page - 1) * size)
+                        .limit(size)
+                )
