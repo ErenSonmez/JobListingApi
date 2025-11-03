@@ -1,10 +1,20 @@
+# Python-generated files
 __pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
 .pytest_cache/
 
-tests/test_logs
+# Virtual environments
+.venv
 
-.venv/
+tests/test_logs
 
 mongo/
 
 .vscode
+
+# Import temps
+import_temps/

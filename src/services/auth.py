@@ -33,7 +33,7 @@ class PydanticObjectIdEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, value)
 
 class AuthService:
-    OAUTH2_SCHEME = oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+    OAUTH2_SCHEME = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
     ENV_SECRET_KEY = "AUTH_SECRET"
     _SECRET = os.getenv(ENV_SECRET_KEY)

@@ -1,5 +1,6 @@
 from models.user import User
 
+# TODO: Create base exception class for all exceptions to inherit
 
 class BaseServiceException(Exception):
     def __init__(self, *args):
@@ -10,6 +11,7 @@ class BadEnvironmentValueException(BaseServiceException):
     def __init__(self, message):
         super().__init__(f"Bad environment variable: {message}")
 
+# AuthService
 class AuthServiceException(BaseServiceException):
     def __init__(self, *args):
         super().__init__(*args)
@@ -42,3 +44,31 @@ class EmailExistsException(AuthServiceException):
 
         message = f"Email '{email}' is used by another user"
         super().__init__(message)
+
+# ImportService
+class ImportServiceException(BaseServiceException):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+class FileTypeNotProvidedException(ImportServiceException):
+    def __init__(self, message = None):
+        if not message:
+            message = "File type info is not provided"
+        super().__init__(message)
+
+class UnknownFileExtensionException(ImportServiceException):
+    def __init__(self, file_name: str, file_extension: str):
+        self.file_name = file_name
+        self.file_extension = file_extension
+
+        message = f"Unknown file extension '{file_extension}', from file name '{file_name}'"
+        super().__init__(message)
+
+class UnknownFileContentTypeException(ImportServiceException):
+    def __init__(self, file_name: str, content_type: str):
+        self.file_name = file_name
+        self.content_type = content_type
+
+        message = f"Unknown content type '{content_type}', file name '{file_name}'"
+        super().__init__(message)
+

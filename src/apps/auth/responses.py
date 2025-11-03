@@ -1,5 +1,5 @@
-from pydantic import BaseModel
+from apps.schemas import BaseResponse
 from services.schemas import Token
 
-class LoginResponse(BaseModel):
+class LoginResponse(BaseResponse):
     token: Token

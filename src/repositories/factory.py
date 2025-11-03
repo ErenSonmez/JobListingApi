@@ -96,7 +96,11 @@ class RepositoryFactory:
     async def _create_client(cls):
         creds = await cls._get_credentials()
 
-        cls._DB_CLIENT = AsyncIOMotorClient(f'mongodb://{creds.username}:{creds.password}@{creds.host}:{creds.port}/')
+        cls._DB_CLIENT = AsyncIOMotorClient(
+            f'mongodb://{creds.username}:{creds.password}@{creds.host}:{creds.port}/',
+            maxPoolSize = 20,
+            minPoolSize = 1,
+        )
 
         await cls._init_odm(reset_model_classes=True)
 

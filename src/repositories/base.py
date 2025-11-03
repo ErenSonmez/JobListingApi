@@ -6,15 +6,12 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from functools import wraps
 
-from typing import Any, Awaitable, List, Mapping, get_origin, overload, TypeVar, Generic, Callable, get_args
-from pydantic import BaseModel, ValidationError
+from typing import Any, Awaitable, Mapping, get_origin, overload, TypeVar, Generic, Callable, get_args, Self
+from pydantic import ValidationError
 
 from repositories.exceptions import MissingIdException
 
-from models.base import BaseModelFieldData
-
-TModel = TypeVar("TModel", bound = Document)
-TModelData = TypeVar("TModelData", bound = BaseModelFieldData)
+from models.base import BaseModelFieldData, TModel, TModelData
 
 class BaseRepository(Generic[TModel, TModelData]):
     def __init__(self, client: AsyncIOMotorClient):
@@ -28,32 +25,32 @@ class BaseRepository(Generic[TModel, TModelData]):
                 args_ = get_args(base)
                 for arg_ in args_:
                     if issubclass(arg_, Document):
-                        self._model = arg_
+                        self._model_type = arg_
                     elif issubclass(arg_, BaseModelFieldData):
-                        self._model_data = arg_
+                        self._model_data_type = arg_
 
     @staticmethod
     def _ensure_model_instance(method: Callable[
-                ["BaseRepository[TModel]"],
-                Callable[["BaseRepository[TModel]"], Awaitable[TModel]]
+                [Self],
+                Callable[[Self], Awaitable[TModel]]
             ]) -> Callable[
-                ["BaseRepository[TModel]"],
-                Callable[["BaseRepository[TModel]"], Awaitable[TModel]]
+                [Self],
+                Callable[[Self], Awaitable[TModel]]
             ]:
         @wraps(method)
-        def wrapper(self: "BaseRepository[TModel]", *args, **kwargs) -> TModel:
+        def wrapper(self: Self, *args, **kwargs) -> TModel:
             new_args=[]
             for arg_ in args:
                 if isinstance(arg_, dict):
                     try:
-                        arg_ = self._model.model_validate(arg_)
+                        arg_ = self._model_type.model_validate(arg_)
                     except ValidationError:
                         pass
 
-                elif isinstance(arg_, self._model_data):
+                elif isinstance(arg_, self._model_data_type):
                     try:
                         item_data: TModelData = arg_
-                        arg_ = self._model.model_validate(item_data.model_dump())
+                        arg_ = self._model_type.model_validate(item_data.model_dump())
                     except ValidationError:
                         pass
 
@@ -65,13 +62,13 @@ class BaseRepository(Generic[TModel, TModelData]):
 
     # Read
     def find(self, query: Mapping[Any, Any] | bool) -> FindMany[TModel]:
-        return self._model.find(query)
+        return self._model_type.find(query)
 
     def get_by_id(self, _id: PydanticObjectId) -> FindOne[TModel]:
-        return self._model.find_one({"_id": _id})
+        return self._model_type.find_one({"_id": _id})
 
     def get_all(self) -> FindMany[TModel]:
-        return self._model.all()
+        return self._model_type.all()
 
     # Create
     @overload
@@ -125,13 +122,16 @@ class BaseRepository(Generic[TModel, TModelData]):
         if isinstance(item_data, PydanticObjectId):
             _id = item_data
 
-        elif isinstance(item_data, self._model) and item_data.id is not None:
+        elif isinstance(item_data, self._model_type) and item_data.id is not None:
             _id = item_data.id
 
         else:
             raise MissingIdException("ID is required either in data object or as parameter for delete.")
 
         return self.get_by_id(_id).delete()
+
+    def element_count(self):
+        return self._model_type.count()
 
     def get_page(self, page: int, size: int) -> FindMany[TModel]:
         # TODO: Add filtering
@@ -141,8 +141,10 @@ class BaseRepository(Generic[TModel, TModelData]):
         if size > 100:
             size = 100
 
-        return (self._model
+        return (self._model_type
                         .all()
                         .skip((page - 1) * size)
                         .limit(size)
                 )
+
+TRepo = TypeVar("TRepo", bound=BaseRepository)

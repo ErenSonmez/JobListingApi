@@ -9,6 +9,7 @@ class Currency(StrEnum):
     US_Dollar = "USD"
     Euro = "EUR"
     UK_Pound = "GBP"
+    Turkish_Lira = "TRY"
 
 class WorkplaceType(IntEnum):
     OnSite = 1
@@ -31,18 +32,18 @@ class JobListingData(BaseModelFieldData):
     date_created: datetime # when was this job listing added to system
 
     salary_currency: Currency
-    min_salary_monthly: int
-    max_salary_monthly: int
+    min_salary_monthly: float | None
+    max_salary_monthly: float | None
 
     location: str # TODO: Placeholder, expand with country/state/city and coordinates maybe ?
     workplace_type: WorkplaceType
 
-    expected_experience: ExperienceLevel
-    min_experience_years: int
-    max_experience_years: int
+    expected_experience: ExperienceLevel | None
+    min_experience_years: int | None
+    max_experience_years: int | None
 
-    expected_skills: list[str] # TODO: Another document ?
+    expected_skills: list[str] | None # TODO: Another document ?
 
-    description: str
+    description: str | None
 
 class JobListing(JobListingData, Document): ...
