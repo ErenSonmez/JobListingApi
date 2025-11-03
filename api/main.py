@@ -1,4 +1,4 @@
-# uv run uvicorn main:app --reload --reload-dir src --app-dir src --env-file .env
+# uv run uvicorn main:app --reload --reload-dir api --app-dir api --env-file .env
 
 from fastapi import FastAPI
 
