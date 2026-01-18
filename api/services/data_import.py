@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, AsyncGenerator, Callable, Generic, get_args, get_origin
+from typing import Any, AsyncGenerator, Awaitable, Callable, Generic, get_args, get_origin
 
 import os
 import pathlib
@@ -98,10 +98,11 @@ class ImportService(BaseService, Generic[TRepo, TModel, TModelData]):
 
     async def _create_and_run_import_job(self, job: ImportJob):
         repo = await RepositoryFactory.get_repository(job.repo_type)
-        # TODO: Bulk write
 
         import_data = []
-        create_tasks = []
+        last_import_coroutine: Awaitable = None
+
+        current_batch_size = 0
         async for item in self._read_file(job.file_path,
                                           job.file_content_type,
                                           job.file_extension):
@@ -110,9 +111,19 @@ class ImportService(BaseService, Generic[TRepo, TModel, TModelData]):
             except ValidationError as ex:
                 continue # TODO: Return validation errors
             import_data.append(validated_item)
-            create_tasks.append(repo.create(item))
+            current_batch_size += 1
+            if current_batch_size >= job.batch_size:
+                if last_import_coroutine is not None:
+                    await last_import_coroutine
 
-        await asyncio.gather(*create_tasks)
+                last_import_coroutine = repo.create_many(import_data)
+
+                current_batch_size = 0
+                import_data = []
+
+        # Import last batch
+        await last_import_coroutine
+        await repo.create_many(import_data)
 
     def _start_job_process(self, job):
         asyncio.run(self._create_and_run_import_job(job))

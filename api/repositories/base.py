@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from functools import wraps
 
-from typing import Any, Awaitable, Mapping, get_origin, overload, TypeVar, Generic, Callable, get_args, Self
+from typing import Any, Awaitable, Iterable, Mapping, get_origin, overload, TypeVar, Generic, Callable, get_args, Self
 from pydantic import ValidationError
 
 from repositories.exceptions import MissingIdException
@@ -29,36 +29,21 @@ class BaseRepository(Generic[TModel, TModelData]):
                     elif issubclass(arg_, BaseModelFieldData):
                         self._model_data_type = arg_
 
-    @staticmethod
-    def _ensure_model_instance(method: Callable[
-                [Self],
-                Callable[[Self], Awaitable[TModel]]
-            ]) -> Callable[
-                [Self],
-                Callable[[Self], Awaitable[TModel]]
-            ]:
-        @wraps(method)
-        def wrapper(self: Self, *args, **kwargs) -> TModel:
-            new_args=[]
-            for arg_ in args:
-                if isinstance(arg_, dict):
-                    try:
-                        arg_ = self._model_type.model_validate(arg_)
-                    except ValidationError:
-                        pass
+    def _ensure_model_instance(self, item: TModel | TModelData | dict[str, Any]) -> TModel:
+        if isinstance(item, self._model_type):
+            return item
 
-                elif isinstance(arg_, self._model_data_type):
-                    try:
-                        item_data: TModelData = arg_
-                        arg_ = self._model_type.model_validate(item_data.model_dump())
-                    except ValidationError:
-                        pass
+        if isinstance(item, dict):
+            return self._model_type.model_validate(item)
 
-                new_args.append(arg_)
+        if isinstance(item, self._model_data_type):
+            item_data: TModelData = item
+            return self._model_type.model_validate(item_data.model_dump())
 
-            return method(self, *new_args, **kwargs)
+        # TODO: Raise exception
 
-        return wrapper
+    def _ensure_model_iterable(self, items: Iterable[TModel | TModelData | dict[str, Any]]) -> Iterable[TModel]:
+        return [self._ensure_model_instance(item) for item in items]
 
     # Read
     def find(self, query: Mapping[Any, Any] | bool) -> FindMany[TModel]:
@@ -80,9 +65,12 @@ class BaseRepository(Generic[TModel, TModelData]):
     @overload
     def create(self, item: TModelData) -> Awaitable[TModel]: ...
 
-    @_ensure_model_instance
     def create(self, item: TModel | TModelData | dict[str, Any]) -> Awaitable[TModel]:
-        return item.create()
+        return self._ensure_model_instance(item).create()
+
+    def create_many(self, items: Iterable[TModel | TModelData | dict[str, Any]]):
+        items = self._ensure_model_iterable(items)
+        return self._model_type.insert_many(items)
 
     # Update
     @overload
@@ -100,8 +88,8 @@ class BaseRepository(Generic[TModel, TModelData]):
     @overload
     def update(self, item_data: TModelData, _id: PydanticObjectId) -> Awaitable[TModel]: ...
 
-    @_ensure_model_instance
     def update(self, item: TModel, _id: PydanticObjectId | None = None) -> Awaitable[TModel]:
+        item = self._ensure_model_instance(item)
         if _id is None:
             if item.id is None:
                 raise MissingIdException("ID is required either in data object or as parameter for update.")
