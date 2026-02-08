@@ -10,3 +10,7 @@ class MongoClientCredentials(BaseModel):
     password: str
 
     db_name: str
+
+class OrderByField(BaseModel):
+    field_name: str
+    ascending: bool

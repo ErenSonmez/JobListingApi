@@ -23,16 +23,16 @@ async def get_all_listings():
     return await listing_repo.get_all().to_list()
 
 @router.get("/")
-async def get_listing_page(page: int = 1, size: int = 10, listing_service: JobListingService = Depends(ServiceFactory.get_job_listing_service)):
+async def get_listing_page(page: int = 1, size: int = 10, listing_service: JobListingService = Depends(ServiceFactory.get_job_listing_service)) -> PaginatedResponse[JobListing]:
     return await listing_service.get_page(page, size)
 
 @router.get("/by_id/{_id}")
-async def get_listing_by_id(_id: PydanticObjectId):
+async def get_listing_by_id(_id: PydanticObjectId) -> JobListing:
     listing_repo = await RepositoryFactory.get_repository(JobListingRepository)
     return await listing_repo.get_by_id(_id)
 
 @router.post("/")
-async def create_job_listing(request: JobListingData):
+async def create_job_listing(request: JobListingData) -> JobListing:
     listing_repo = await RepositoryFactory.get_repository(JobListingRepository)
     return await listing_repo.create(request)
 

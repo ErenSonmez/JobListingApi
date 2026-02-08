@@ -10,7 +10,7 @@ from services.exceptions import UserNotFoundExcepotion
 router = APIRouter(tags=["Auth"])
 
 @router.post("/login")
-async def login(request: LoginRequest):
+async def login(request: LoginRequest) -> LoginResponse:
     try:
         token = await AuthService.login(request)
     except UserNotFoundExcepotion:

@@ -1,7 +1,5 @@
 from models.user import User
 
-# TODO: Create base exception class for all exceptions to inherit
-
 class BaseServiceException(Exception):
     def __init__(self, *args):
         # Call the base class constructor with the parameters it needs
@@ -10,6 +8,10 @@ class BaseServiceException(Exception):
 class BadEnvironmentValueException(BaseServiceException):
     def __init__(self, message):
         super().__init__(f"Bad environment variable: {message}")
+
+class MissingEnvironmentVariableException(BaseServiceException):
+    def __init__(self, env_key):
+        super().__init__(f"Missing environment variable: {env_key}")
 
 # AuthService
 class AuthServiceException(BaseServiceException):

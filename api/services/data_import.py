@@ -110,6 +110,7 @@ class ImportService(BaseService, Generic[TRepo, TModel, TModelData]):
                 validated_item = job.model_data_type.model_validate(item)
             except ValidationError as ex:
                 continue # TODO: Return validation errors
+
             import_data.append(validated_item)
             current_batch_size += 1
             if current_batch_size >= job.batch_size:

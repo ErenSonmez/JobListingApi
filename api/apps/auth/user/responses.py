@@ -1,0 +1,6 @@
+from apps.schemas import BaseResponse
+from models.user import UserDataPublic
+
+
+class GetUserResponse(BaseResponse, UserDataPublic): ...
+class CreateUserResponse(BaseResponse, UserDataPublic): ...

@@ -1,6 +1,8 @@
 import os
 
-from beanie import init_beanie, Document
+import beanie
+from beanie import Document
+
 import pkgutil
 import importlib
 import inspect
@@ -87,7 +89,7 @@ class RepositoryFactory:
 
         model_classes = await cls._get_model_classes()
 
-        await init_beanie(
+        await beanie.init_beanie(
             database=cls._DB_CLIENT.get_database(cls._CREDENTIALS.db_name),
             document_models = model_classes,
         )
@@ -126,6 +128,14 @@ class RepositoryFactory:
         cls._DB_CLIENT = None
         if create_client:
             await cls._create_client()
+
+    @classmethod
+    async def setup(cls):
+        await cls._create_client()
+
+    @classmethod
+    async def teardown(cls):
+        pass # TODO: Teardown DB setup
 
     @classmethod
     async def get_repository(cls, repo_type: Type[_REPO_TYPE], reset_repo: bool = False) -> _REPO_TYPE:

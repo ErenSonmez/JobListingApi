@@ -1,17 +1,15 @@
-from beanie import Document, PydanticObjectId
+from beanie import Document, PydanticObjectId, SortDirection
 from beanie.odm.queries.find import FindOne, FindMany
 from beanie.odm.queries.delete import DeleteOne
 
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from functools import wraps
-
 from typing import Any, Awaitable, Iterable, Mapping, get_origin, overload, TypeVar, Generic, Callable, get_args, Self
-from pydantic import ValidationError
 
 from repositories.exceptions import MissingIdException
 
 from models.base import BaseModelFieldData, TModel, TModelData
+from repositories.schemas import OrderByField
 
 class BaseRepository(Generic[TModel, TModelData]):
     def __init__(self, client: AsyncIOMotorClient):
@@ -45,9 +43,22 @@ class BaseRepository(Generic[TModel, TModelData]):
     def _ensure_model_iterable(self, items: Iterable[TModel | TModelData | dict[str, Any]]) -> Iterable[TModel]:
         return [self._ensure_model_instance(item) for item in items]
 
+    def _parse_order_by(self, order_by: list[OrderByField]):
+        # TODO: Check fields, if field does not exist raise error
+        return [
+            (obf.field_name,
+            SortDirection.ASCENDING if obf.ascending else SortDirection.DESCENDING)
+            for obf in order_by
+        ]
+
     # Read
-    def find(self, query: Mapping[Any, Any] | bool) -> FindMany[TModel]:
-        return self._model_type.find(query)
+    def find(self, *query: Mapping[Any, Any] | bool, order_by: list[OrderByField] = None) -> FindMany[TModel]:
+        result = self._model_type.find(*query)
+        if order_by is not None:
+            parsed_order_by = self._parse_order_by(order_by)
+            result.sort(parsed_order_by)
+
+        return result
 
     def get_by_id(self, _id: PydanticObjectId) -> FindOne[TModel]:
         return self._model_type.find_one({"_id": _id})
@@ -120,19 +131,5 @@ class BaseRepository(Generic[TModel, TModelData]):
 
     def element_count(self):
         return self._model_type.count()
-
-    def get_page(self, page: int, size: int) -> FindMany[TModel]:
-        # TODO: Add filtering
-        if page < 1:
-            page = 1
-
-        if size > 100:
-            size = 100
-
-        return (self._model_type
-                        .all()
-                        .skip((page - 1) * size)
-                        .limit(size)
-                )
 
 TRepo = TypeVar("TRepo", bound=BaseRepository)

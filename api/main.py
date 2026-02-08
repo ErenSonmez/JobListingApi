@@ -2,7 +2,19 @@
 
 from fastapi import FastAPI
 
-app = FastAPI()
+from contextlib import asynccontextmanager
+
+from repositories.factory import RepositoryFactory
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await RepositoryFactory.setup()
+
+    yield
+
+    await RepositoryFactory.teardown()
+
+app = FastAPI(lifespan=lifespan)
 
 app.root_path = "/api"
 

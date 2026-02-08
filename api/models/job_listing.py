@@ -1,4 +1,7 @@
-from beanie import Document
+import pymongo
+
+from typing import Annotated
+from beanie import Document, Indexed
 
 from datetime import datetime
 from enum import StrEnum, IntEnum
@@ -24,7 +27,7 @@ class ExperienceLevel(IntEnum):
 
 class JobListingData(BaseModelFieldData):
     ext_id: str
-    title: str
+    title: Annotated[str, Indexed(index_type=pymongo.TEXT)]
     company: str # TODO: Another document ?
     source_url: str
 
@@ -44,6 +47,6 @@ class JobListingData(BaseModelFieldData):
 
     expected_skills: list[str] | None # TODO: Another document ?
 
-    description: str | None
+    description: Annotated[str | None, Indexed()]
 
 class JobListing(JobListingData, Document): ...

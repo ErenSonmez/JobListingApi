@@ -1,6 +1,10 @@
-from typing import Generic, get_args, get_origin
+import os
+from typing import Any, Generic, Mapping, get_args, get_origin
+
+from beanie import SortDirection
 
 from services.base import BaseService
+from services.exceptions import BadEnvironmentValueException, MissingEnvironmentVariableException
 
 from apps.schemas import PaginatedResponse
 
@@ -8,10 +12,15 @@ from models.base import TModel, TModelData
 
 from repositories.base import BaseRepository, TRepo
 from repositories.factory import RepositoryFactory
+from repositories.schemas import OrderByField
 
 # TODO: Write tests
 
 class DocumentService(BaseService, Generic[TRepo, TModel, TModelData]):
+    ENV_MAX_PER_PAGE_KEY = "MAX_PER_PAGE"
+    MAX_PER_PAGE: int = None
+
+    default_order_by: list[OrderByField] = []
     def __init_subclass__(self):
         super().__init_subclass__()
 
@@ -29,12 +38,44 @@ class DocumentService(BaseService, Generic[TRepo, TModel, TModelData]):
         
         return self._repo
 
-    async def get_page(self, page: int, size: int):
+    @property
+    def max_per_page(self):
+        if self.MAX_PER_PAGE is None:
+            val = os.getenv(self.ENV_MAX_PER_PAGE_KEY)
+
+            if val is None:
+                raise MissingEnvironmentVariableException(self.ENV_MAX_PER_PAGE_KEY)
+
+            try:
+                self.MAX_PER_PAGE = int(val)
+            except ValueError:
+                raise BadEnvironmentValueException(f"Environment variable {self.ENV_MAX_PER_PAGE_KEY} must be int-convertible")
+
+        return self.MAX_PER_PAGE
+
+    async def get_page(self, page: int, size: int, filter_mappings: list[Mapping[Any, Any]] = None, order_by: list[OrderByField] = None):
         repo = await self._get_repo()
+
+        if not order_by:
+            order_by = self.default_order_by.copy()
+
+        if filter_mappings is None:
+            filter_mappings = []
+
+        if page < 1:
+            page = 1
+
+        if size > self.max_per_page:
+            size = self.max_per_page
+
+        query = repo.find(*filter_mappings, order_by = order_by)
+
+        element_count = await query.count()
+        items = await query.skip((page - 1) * size).limit(size).to_list()
 
         return PaginatedResponse(
             page = page,
             size = size,
-            element_count = await repo.element_count(),
-            items = await repo.get_page(page, size).to_list()
+            element_count = element_count,
+            items = items
         )

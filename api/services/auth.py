@@ -22,7 +22,7 @@ from repositories.user import UserRepository
 
 from models.user import User, UserDataFull
 
-from services.exceptions import BadEnvironmentValueException, EmailExistsException, IncorrectPasswordException, UserNotFoundExcepotion, UsernameExistsException
+from services.exceptions import BadEnvironmentValueException, EmailExistsException, IncorrectPasswordException, MissingEnvironmentVariableException, UserNotFoundExcepotion, UsernameExistsException
 from services.schemas import Token, TokenData
 
 class PydanticObjectIdEncoder(json.JSONEncoder):
@@ -54,7 +54,9 @@ class AuthService:
         if cls._SECRET is None:
             cls._SECRET = os.getenv(cls.ENV_SECRET_KEY)
 
-        # TODO: Raise error if secret is none here
+        if cls._SECRET is None:
+            raise MissingEnvironmentVariableException(cls.ENV_SECRET_KEY)
+
         return cls._SECRET
 
     @classmethod

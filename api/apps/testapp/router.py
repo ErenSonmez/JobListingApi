@@ -1,14 +1,21 @@
 import asyncio
 
+from models.job_listing import JobListing
 from models.user import User
+
 from repositories.factory import RepositoryFactory
-from repositories.schemas import MongoClientCredentials
+from repositories.job_listing import JobListingRepository
+from repositories.schemas import MongoClientCredentials, OrderByField
+
+from beanie.odm.operators.find.evaluation import Text
 
 from services.auth import AuthService
 
 from fastapi import APIRouter, Depends, UploadFile
 
 from typing import Annotated
+
+from services.factory import ServiceFactory
 
 router = APIRouter(tags=["Test app"])
 
@@ -35,3 +42,14 @@ async def upload_test(file: UploadFile):
         "size": file.size,
         "content": (await file.read()).decode()
     }
+
+@router.get("/repo-filter-test")
+async def repo_filter_test():
+    service = ServiceFactory.get_job_listing_service()
+    return await service.get_page(1, 10,
+        filter_mappings=[
+        Text('"developer" -"Full Stack"', case_sensitive=False),
+
+    ],
+    order_by=[OrderByField(field_name = "date_posted", ascending = True)]
+    )
