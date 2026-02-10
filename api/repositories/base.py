@@ -11,6 +11,8 @@ from repositories.exceptions import MissingIdException
 from models.base import BaseModelFieldData, TModel, TModelData
 from repositories.schemas import OrderByField
 
+# TODO: Write query tests
+
 class BaseRepository(Generic[TModel, TModelData]):
     def __init__(self, client: AsyncIOMotorClient):
         self._client: AsyncIOMotorClient = client
@@ -128,8 +130,5 @@ class BaseRepository(Generic[TModel, TModelData]):
             raise MissingIdException("ID is required either in data object or as parameter for delete.")
 
         return self.get_by_id(_id).delete()
-
-    def element_count(self):
-        return self._model_type.count()
 
 TRepo = TypeVar("TRepo", bound=BaseRepository)

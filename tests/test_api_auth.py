@@ -14,7 +14,6 @@ import aiohttp
 
 from tests.utils import generate_random_user_data, setup_teardown_users
 
-
 @pytest.mark.asyncio(loop_scope="session")
 async def test_authorize_and_send_request(setup_teardown_users):
     users_to_delete, user_ids_to_delete = setup_teardown_users

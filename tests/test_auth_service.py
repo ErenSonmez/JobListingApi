@@ -5,21 +5,12 @@ import logging
 pytest_plugins = ('pytest_asyncio',)
 
 from apps.auth.requests import LoginRequest
-from apps.auth.user.requests import CreateUserRequest
 
 from services.exceptions import EmailExistsException, UsernameExistsException
 
-from models.user import User
-
-import uuid # for random username/email generation
-
 from services.auth import AuthService
 
-from repositories.factory import RepositoryFactory
-from repositories.user import UserRepository
-
 from tests.utils import generate_random_user_data, setup_teardown_users
-
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_hashing_class():

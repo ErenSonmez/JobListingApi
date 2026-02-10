@@ -47,9 +47,6 @@ async def upload_test(file: UploadFile):
 async def repo_filter_test():
     service = ServiceFactory.get_job_listing_service()
     return await service.get_page(1, 10,
-        filter_mappings=[
         Text('"developer" -"Full Stack"', case_sensitive=False),
-
-    ],
     order_by=[OrderByField(field_name = "date_posted", ascending = True)]
     )

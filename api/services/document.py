@@ -14,8 +14,6 @@ from repositories.base import BaseRepository, TRepo
 from repositories.factory import RepositoryFactory
 from repositories.schemas import OrderByField
 
-# TODO: Write tests
-
 class DocumentService(BaseService, Generic[TRepo, TModel, TModelData]):
     ENV_MAX_PER_PAGE_KEY = "MAX_PER_PAGE"
     MAX_PER_PAGE: int = None
@@ -53,19 +51,23 @@ class DocumentService(BaseService, Generic[TRepo, TModel, TModelData]):
 
         return self.MAX_PER_PAGE
 
-    async def get_page(self, page: int, size: int, filter_mappings: list[Mapping[Any, Any]] = None, order_by: list[OrderByField] = None):
+    async def element_count(self, *filter_mappings: tuple[Mapping[Any, Any]]):
+        repo = await self._get_repo()
+
+        return await repo.find(*filter_mappings).count()
+
+    async def get_page(self, page: int, size: int, *filter_mappings: tuple[Mapping[Any, Any]], order_by: list[OrderByField] = None):
         repo = await self._get_repo()
 
         if not order_by:
             order_by = self.default_order_by.copy()
 
-        if filter_mappings is None:
-            filter_mappings = []
-
         if page < 1:
             page = 1
 
-        if size > self.max_per_page:
+        if size <= 0:
+            size = 1
+        elif size > self.max_per_page:
             size = self.max_per_page
 
         query = repo.find(*filter_mappings, order_by = order_by)

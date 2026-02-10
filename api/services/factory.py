@@ -1,15 +1,4 @@
-
 from typing import Type, TypeVar
-
-from repositories.base import TRepo
-
-from models.base import TModel, TModelData
-
-from models.user import User, UserDataFull
-from repositories.user import UserRepository
-
-from models.job_listing import JobListing, JobListingData
-from repositories.job_listing import JobListingData, JobListingRepository
 
 from services.base import BaseService
 
