@@ -6,7 +6,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from typing import Any, Awaitable, Iterable, Mapping, get_origin, overload, TypeVar, Generic, Callable, get_args, Self
 
-from repositories.exceptions import MissingIdException
+from pydantic import ValidationError
+
+from repositories.exceptions import MissingIdException, ModelValidationException, OrderFieldNotExistsException
 
 from models.base import BaseModelFieldData, TModel, TModelData
 from repositories.schemas import OrderByField
@@ -30,28 +32,37 @@ class BaseRepository(Generic[TModel, TModelData]):
                         self._model_data_type = arg_
 
     def _ensure_model_instance(self, item: TModel | TModelData | dict[str, Any]) -> TModel:
-        if isinstance(item, self._model_type):
-            return item
+        try:
+            if isinstance(item, self._model_type):
+                return item
 
-        if isinstance(item, dict):
-            return self._model_type.model_validate(item)
+            if isinstance(item, dict):
+                return self._model_type.model_validate(item)
 
-        if isinstance(item, self._model_data_type):
-            item_data: TModelData = item
-            return self._model_type.model_validate(item_data.model_dump())
+            if isinstance(item, self._model_data_type):
+                item_data: TModelData = item
+                return self._model_type.model_validate(item_data.model_dump())
+        except ValidationError as ex:
+            raise ModelValidationException(item, self._model_type, ex.errors())
 
-        # TODO: Raise exception
+        raise ModelValidationException(item, self._model_type)
 
     def _ensure_model_iterable(self, items: Iterable[TModel | TModelData | dict[str, Any]]) -> Iterable[TModel]:
         return [self._ensure_model_instance(item) for item in items]
 
     def _parse_order_by(self, order_by: list[OrderByField]):
-        # TODO: Check fields, if field does not exist raise error
-        return [
-            (obf.field_name,
-            SortDirection.ASCENDING if obf.ascending else SortDirection.DESCENDING)
-            for obf in order_by
-        ]
+        parsed_order_by = []
+
+        model_fields = set(self._model_type.model_fields.keys())
+        for order_by_field in order_by:
+            field_name = order_by_field.field_name
+            if field_name not in model_fields:
+                raise OrderFieldNotExistsException(field_name, self._model_type)
+
+            direction = SortDirection.ASCENDING if order_by_field.ascending else SortDirection.DESCENDING
+            parsed_order_by.append((field_name, direction))
+
+        return parsed_order_by
 
     # Read
     def find(self, *query: Mapping[Any, Any] | bool, order_by: list[OrderByField] = None) -> FindMany[TModel]:

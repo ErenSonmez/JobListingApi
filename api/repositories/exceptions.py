@@ -1,3 +1,7 @@
+from beanie import Document
+from pydantic_core import ErrorDetails
+
+
 class BaseRepositoryException(Exception):
     def __init__(self, *args):
         # Call the base class constructor with the parameters it needs
@@ -22,3 +26,13 @@ class MissingIdException(BaseRepositoryException):
     def __init__(self, message):
         message = f"ID is missing: {message}"
         super.__init__(message)
+
+class ModelValidationException(BaseRepositoryException):
+    def __init__(self, data, model: type[Document], validation_errors: list[ErrorDetails] = None):
+        message = f"Could not convert data to {model} - {data}"
+        super.__init__(message)
+        self.validation_errors = validation_errors
+
+class OrderFieldNotExistsException(BaseRepositoryException):
+    def __init__(self, field_name: str, model: type[Document]):
+        message = f"Field '{field_name}' does not exist in model: {model}"
