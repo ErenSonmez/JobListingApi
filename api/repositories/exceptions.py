@@ -36,3 +36,4 @@ class ModelValidationException(BaseRepositoryException):
 class OrderFieldNotExistsException(BaseRepositoryException):
     def __init__(self, field_name: str, model: type[Document]):
         message = f"Field '{field_name}' does not exist in model: {model}"
+        super().__init__(message)

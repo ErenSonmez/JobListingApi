@@ -47,6 +47,6 @@ class JobListingData(BaseModelFieldData):
 
     expected_skills: list[str] | None # TODO: Another document ?
 
-    description: Annotated[str | None, Indexed()]
+    description: str
 
 class JobListing(JobListingData, Document): ...

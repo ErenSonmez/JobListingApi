@@ -1,3 +1,5 @@
+from beanie import Document
+
 from models.user import User
 
 class BaseServiceException(Exception):
@@ -74,3 +76,11 @@ class UnknownFileContentTypeException(ImportServiceException):
         message = f"Unknown content type '{content_type}', file name '{file_name}'"
         super().__init__(message)
 
+# DocumentService
+class DocumentServiceException(BaseServiceException):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+class DocumentNotFoundByIdException(DocumentServiceException):
+    def __init__(self, model: type[Document], _id):
+        message = f"Could not find {model.__name__} with id '{_id}'"

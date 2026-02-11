@@ -1,10 +1,10 @@
 import os
 from typing import Any, Generic, Mapping, get_args, get_origin
 
-from beanie import SortDirection
+from beanie import Document, PydanticObjectId
 
 from services.base import BaseService
-from services.exceptions import BadEnvironmentValueException, MissingEnvironmentVariableException
+from services.exceptions import BadEnvironmentValueException, DocumentNotFoundByIdException, MissingEnvironmentVariableException
 
 from apps.schemas import PaginatedResponse
 
@@ -23,18 +23,28 @@ class DocumentService(BaseService, Generic[TRepo, TModel, TModelData]):
         super().__init_subclass__()
 
         self._repo = None
+        self._model_type = None
         for base in self.__orig_bases__: # get generic types
             if get_origin(base) is DocumentService:
                 args_ = get_args(base)
                 for arg_ in args_:
                     if issubclass(arg_, BaseRepository):
                         self._repo_type = arg_
+                    if issubclass(arg_, Document):
+                        self._model_type = arg_
 
     async def _get_repo(self):
         if self._repo is None:
             self._repo: BaseRepository[TModel, TModelData] = await RepositoryFactory.get_repository(self._repo_type)
         
         return self._repo
+
+    async def get_by_id(self, _id: PydanticObjectId):
+        item = await self._repo.get_by_id(_id)
+        if item is None:
+            raise DocumentNotFoundByIdException(self._model_type, _id)
+
+        return item
 
     @property
     def max_per_page(self):
