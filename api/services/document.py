@@ -39,6 +39,16 @@ class DocumentService(BaseService, Generic[TRepo, TModel, TModelData]):
         
         return self._repo
 
+    def _parse_order_by_from_str(self, field: str):
+        if field.endswith(",asc"):
+            return OrderByField(field_name=field[:-4], ascending=True)
+        elif field.endswith(",desc"):
+            return OrderByField(field_name=field[:-5], ascending=False)
+        else:
+            # TODO: Service Exception
+            raise ValueError('Invalid order by format, expected format: {field_name},{asc/desc}')
+
+
     async def get_by_id(self, _id: PydanticObjectId):
         item = await self._repo.get_by_id(_id)
         if item is None:
@@ -66,11 +76,24 @@ class DocumentService(BaseService, Generic[TRepo, TModel, TModelData]):
 
         return await repo.find(*filter_mappings).count()
 
-    async def get_page(self, page: int, size: int, *filter_mappings: tuple[Mapping[Any, Any]], order_by: list[OrderByField] = None):
+    async def get_page(self, page: int, size: int, *filter_mappings: tuple[Mapping[Any, Any]], order_by: list[OrderByField] | list[str] = None):
         repo = await self._get_repo()
+        print(order_by)
 
         if not order_by:
             order_by = self.default_order_by.copy()
+
+        for i in range(len(order_by)):
+            field = order_by[i]
+            if isinstance(field, OrderByField):
+                continue
+            elif isinstance(field, str):
+                order_by[i] = self._parse_order_by_from_str(field)
+            else:
+                # TODO: Service exception
+                raise ValueError(f"Unexpected order by parameter type: Expected OrderByField or str, got {field.__class__.__name__}")
+
+        print(order_by)
 
         if page < 1:
             page = 1
